@@ -16,7 +16,10 @@ body { background: #111; }
   display: block;
   width: 100%;
   height: 100%;
+  cursor: default;
 }
+
+#canvas.panning { cursor: grabbing; }
 
 .page-title {
   position: absolute;
@@ -38,14 +41,62 @@ body { background: #111; }
   overflow-y: auto;
 }
 
-.controls-panel h4 {
-  margin: 10px 0 12px;
+.controls-panel h4 { margin: 10px 0 12px; }
+.controls-panel h4 small { color: #aaa; font-size: 12px; }
+
+.material-dropdown { position: relative; }
+
+.material-dropdown-button,
+.material-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #555;
+  background: #333;
+  color: white;
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
 }
 
-.controls-panel h4 small {
-  color: #aaa;
-  font-size: 12px;
+.material-dropdown-button {
+  border-radius: 6px;
+  min-height: 48px;
 }
+
+.material-dropdown-button:hover,
+.material-option:hover { background: #444; }
+
+.material-options {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 100;
+  border: 1px solid #555;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #303030;
+  box-shadow: 0 8px 20px rgba(0,0,0,.4);
+}
+
+.material-dropdown.open .material-options { display: block; }
+.material-option { border: 0; border-bottom: 1px solid #444; min-height: 48px; }
+.material-option:last-child { border-bottom: 0; }
+.material-option.selected { background: #3d3d3d; }
+
+.material-thumb {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #666;
+}
+
+.dropdown-arrow { margin-left: auto; color: #bbb; font-size: 18px; }
 
 .button-grid {
   display: grid;
@@ -65,11 +116,14 @@ body { background: #111; }
 
 .button-grid button:hover { background: #444; }
 
-.library-list {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
+.pan-hint {
+  margin: -14px 0 25px;
+  color: #999;
+  font-size: 12px;
+  text-align: center;
 }
+
+.library-list { display: flex; flex-direction: column; gap: 7px; }
 
 .library-item {
   padding: 9px 10px;
