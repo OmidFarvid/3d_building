@@ -8,7 +8,8 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-camera.position.z = 5;
+camera.position.set(0, 50, 50);
+camera.lookAt(0, 0, 0);
 
 const geometry = new THREE.SphereGeometry(1, 64, 64);
 const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
