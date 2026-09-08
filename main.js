@@ -170,12 +170,7 @@ canvas.addEventListener('pointermove', event => {
   if (!isPanning) return;
   const dx = event.clientX - lastPanX, dy = event.clientY - lastPanY;
   lastPanX = event.clientX; lastPanY = event.clientY;
-  const distance = camera.position.distanceTo(cameraTarget), panSpeed = distance * 0.0015;
-  const forward = cameraTarget.clone().sub(camera.position).normalize();
-  const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-  const up = new THREE.Vector3().crossVectors(right, forward).normalize();
-  const offset = right.multiplyScalar(-dx * panSpeed).add(up.multiplyScalar(dy * panSpeed));
-  camera.position.add(offset); cameraTarget.add(offset); camera.lookAt(cameraTarget);
+  panCamera(dx, dy);
 });
 canvas.addEventListener('pointerup', event => {
   if (event.button !== 2) return;
@@ -184,11 +179,63 @@ canvas.addEventListener('pointerup', event => {
 });
 canvas.addEventListener('pointercancel', () => { isPanning = false; canvas.classList.remove('panning'); });
 
+function panCamera(dx, dy) {
+  const distance = camera.position.distanceTo(cameraTarget), panSpeed = distance * 0.0015;
+  const forward = cameraTarget.clone().sub(camera.position).normalize();
+  const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+  const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+  const offset = right.multiplyScalar(-dx * panSpeed).add(up.multiplyScalar(dy * panSpeed));
+  camera.position.add(offset); cameraTarget.add(offset); camera.lookAt(cameraTarget);
+}
+
+// Mobile: two fingers pan and pinch to zoom. A single tap remains object selection.
+const touchPoints = new Map();
+let touchMode = null;
+let lastTouchCenter = null;
+let lastTouchDistance = 0;
+
+canvas.addEventListener('pointerdown', event => {
+  if (event.pointerType !== 'touch') return;
+  touchPoints.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  if (touchPoints.size === 2) {
+    const points = [...touchPoints.values()];
+    lastTouchCenter = { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 };
+    lastTouchDistance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+    touchMode = 'panzoom';
+  }
+});
+
+canvas.addEventListener('pointermove', event => {
+  if (event.pointerType !== 'touch' || !touchPoints.has(event.pointerId)) return;
+  touchPoints.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  if (touchPoints.size !== 2 || touchMode !== 'panzoom') return;
+
+  const points = [...touchPoints.values()];
+  const center = { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 };
+  const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+  panCamera(center.x - lastTouchCenter.x, center.y - lastTouchCenter.y);
+  if (lastTouchDistance > 0) zoom((distance - lastTouchDistance) * 0.08);
+  lastTouchCenter = center;
+  lastTouchDistance = distance;
+});
+
+function endTouch(event) {
+  if (event.pointerType !== 'touch') return;
+  touchPoints.delete(event.pointerId);
+  if (touchPoints.size < 2) {
+    touchMode = null;
+    lastTouchCenter = null;
+    lastTouchDistance = 0;
+  }
+}
+canvas.addEventListener('pointerup', endTouch);
+canvas.addEventListener('pointercancel', endTouch);
+
 createButton.addEventListener('click', () => createObject());
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 canvas.addEventListener('click', event => {
-  if (event.button !== 0 || isPanning) return;
+  if (event.button !== 0 || isPanning || touchMode === 'panzoom') return;
   const rect = canvas.getBoundingClientRect();
   mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
