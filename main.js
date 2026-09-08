@@ -42,8 +42,9 @@ const objects = [];
 let selectedObject = null;
 let nextObjectId = 1;
 
+// One Three.js unit represents 1 cm, so every box is exactly 1 cm x 1 cm x 1 cm.
 function createObject(materialKey = materialSelect.value) {
-  const geometry = new THREE.BoxGeometry(16, 16, 16);
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
   const mesh = new THREE.Mesh(geometry, materials[materialKey].clone());
   mesh.position.set(0, 0, 0);
   mesh.userData = {
@@ -141,5 +142,5 @@ window.addEventListener('resize', () => {
   renderer.setSize(width, height);
 });
 
-// Start with one editable object.
+// Start with one editable 1 cm box.
 createObject('brick');
