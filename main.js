@@ -10,6 +10,11 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 camera.position.z = 5;
 
+const geometry = new THREE.SphereGeometry(1, 64, 64);
+const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+const sphere = new THREE.Mesh(geometry, material);
+scene.add(sphere);
+
 function animate() {
   renderer.render(scene, camera);
 }
