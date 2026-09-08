@@ -5,8 +5,61 @@ html, body {
   overflow: hidden;
 }
 
+body {
+  background: #111;
+}
+
+#viewport {
+  height: 100vh;
+  background: #181818;
+}
+
 #canvas {
   display: block;
-  width: 100vw;
+  width: 100%;
+  height: 100%;
+}
+
+.page-title {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  color: white;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.controls-panel {
   height: 100vh;
+  padding: 30px 20px;
+  background: #242424;
+  color: white;
+  overflow-y: auto;
+}
+
+.controls-panel h4 {
+  margin: 10px 0 15px;
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.button-grid button {
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: #333;
+  color: white;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.button-grid button:hover {
+  background: #444;
 }
