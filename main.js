@@ -84,9 +84,16 @@ function rotate(axis, amount) {
   selectedObject.rotation[axis] += amount;
 }
 
-// Movement is in 1 cm blocks. One Three.js unit represents 1 cm.
+function zoom(amount) {
+  const direction = new THREE.Vector3();
+  camera.getWorldDirection(direction);
+  camera.position.addScaledVector(direction, amount);
+  camera.updateProjectionMatrix();
+}
+
 const moveStep = 1;
 const rotateStep = Math.PI / 2;
+const zoomStep = 5;
 
 document.querySelectorAll('[data-action]').forEach(button => {
   button.addEventListener('click', () => {
@@ -104,13 +111,14 @@ document.querySelectorAll('[data-action]').forEach(button => {
       case 'rotate-y-plus': rotate('y', rotateStep); break;
       case 'rotate-z-minus': rotate('z', -rotateStep); break;
       case 'rotate-z-plus': rotate('z', rotateStep); break;
+      case 'zoom-in': zoom(-zoomStep); break;
+      case 'zoom-out': zoom(zoomStep); break;
     }
   });
 });
 
 createButton.addEventListener('click', () => createObject());
 
-// Click an object in the 3D viewport to make it the editable object.
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
@@ -142,5 +150,4 @@ window.addEventListener('resize', () => {
   renderer.setSize(width, height);
 });
 
-// Start with one editable 1 cm box.
 createObject('brick');
