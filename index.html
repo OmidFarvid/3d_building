@@ -8,8 +8,36 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1 style="position: fixed; top: 20px; left: 0; width: 100%; margin: 0; text-align: center; color: white; z-index: 10;">Hello JJK</h1>
-  <canvas id="canvas"></canvas>
+  <div class="container-fluid h-100">
+    <div class="row h-100">
+      <div class="col-9 position-relative p-0" id="viewport">
+        <h1 class="page-title">Hello JJK</h1>
+        <canvas id="canvas"></canvas>
+      </div>
+
+      <div class="col-3 controls-panel">
+        <h4>Move</h4>
+        <div class="button-grid">
+          <button data-action="move-x-minus">X −</button>
+          <button data-action="move-x-plus">X +</button>
+          <button data-action="move-y-minus">Y −</button>
+          <button data-action="move-y-plus">Y +</button>
+          <button data-action="move-z-minus">Z −</button>
+          <button data-action="move-z-plus">Z +</button>
+        </div>
+
+        <h4>Rotate</h4>
+        <div class="button-grid">
+          <button data-action="rotate-x-minus">RX −</button>
+          <button data-action="rotate-x-plus">RX +</button>
+          <button data-action="rotate-y-minus">RY −</button>
+          <button data-action="rotate-y-plus">RY +</button>
+          <button data-action="rotate-z-minus">RZ −</button>
+          <button data-action="rotate-z-plus">RZ +</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <script type="module" src="main.js"></script>
 </body>
 </html>
