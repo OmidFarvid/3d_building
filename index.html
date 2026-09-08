@@ -17,13 +17,20 @@
 
       <div class="col-3 controls-panel">
         <h4>Material</h4>
-        <select id="materialSelect" class="form-select mb-3">
-          <option value="brick">Brick</option>
-          <option value="concrete">Concrete</option>
-          <option value="wood">Wood</option>
-          <option value="glass">Glass</option>
-          <option value="metal">Metal</option>
-        </select>
+        <div id="materialDropdown" class="material-dropdown mb-3">
+          <button id="materialDropdownButton" class="material-dropdown-button" type="button">
+            <img id="materialPreview" class="material-thumb" alt="">
+            <span id="materialLabel">Brick</span>
+            <span class="dropdown-arrow">▾</span>
+          </button>
+          <div id="materialOptions" class="material-options">
+            <button type="button" class="material-option selected" data-value="brick"><img class="material-thumb" alt=""><span>Brick</span></button>
+            <button type="button" class="material-option" data-value="concrete"><img class="material-thumb" alt=""><span>Concrete</span></button>
+            <button type="button" class="material-option" data-value="wood"><img class="material-thumb" alt=""><span>Wood</span></button>
+            <button type="button" class="material-option" data-value="glass"><img class="material-thumb" alt=""><span>Glass</span></button>
+            <button type="button" class="material-option" data-value="metal"><img class="material-thumb" alt=""><span>Metal</span></button>
+          </div>
+        </div>
         <button id="createButton" class="btn btn-primary w-100 mb-4">Create</button>
 
         <h4>Move <small>(1 cm)</small></h4>
@@ -51,6 +58,7 @@
           <button data-action="zoom-in">Zoom +</button>
           <button data-action="zoom-out">Zoom −</button>
         </div>
+        <div class="pan-hint">Right-click + drag = Pan</div>
 
         <h4>Library</h4>
         <div id="library" class="library-list"></div>
