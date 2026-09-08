@@ -10,6 +10,7 @@ body { background: #111; }
 #viewport {
   height: 100vh;
   background: #181818;
+  min-height: 0;
 }
 
 #canvas {
@@ -17,6 +18,7 @@ body { background: #111; }
   width: 100%;
   height: 100%;
   cursor: default;
+  touch-action: none;
 }
 
 #canvas.panning { cursor: grabbing; }
@@ -31,14 +33,16 @@ body { background: #111; }
   color: white;
   z-index: 10;
   pointer-events: none;
+  font-size: 24px;
 }
 
 .controls-panel {
   height: 100vh;
-  padding: 25px 20px;
+  padding: 22px 18px;
   background: #242424;
   color: white;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .controls-panel h4 { margin: 10px 0 12px; }
@@ -61,8 +65,8 @@ body { background: #111; }
 }
 
 .material-dropdown-button {
-  border-radius: 6px;
-  min-height: 48px;
+  border-radius: 8px;
+  min-height: 52px;
 }
 
 .material-dropdown-button:hover,
@@ -76,23 +80,23 @@ body { background: #111; }
   top: calc(100% + 4px);
   z-index: 100;
   border: 1px solid #555;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   background: #303030;
   box-shadow: 0 8px 20px rgba(0,0,0,.4);
 }
 
 .material-dropdown.open .material-options { display: block; }
-.material-option { border: 0; border-bottom: 1px solid #444; min-height: 48px; }
+.material-option { border: 0; border-bottom: 1px solid #444; min-height: 50px; }
 .material-option:last-child { border-bottom: 0; }
 .material-option.selected { background: #3d3d3d; }
 
 .material-thumb {
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: 5px;
   border: 1px solid #666;
 }
 
@@ -102,25 +106,34 @@ body { background: #111; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-bottom: 25px;
+  margin-bottom: 22px;
 }
 
 .button-grid button {
+  min-height: 46px;
   border: 1px solid #555;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #333;
   color: white;
   padding: 9px;
   cursor: pointer;
+  font-size: 14px;
+  touch-action: manipulation;
 }
 
 .button-grid button:hover { background: #444; }
 
-#deleteButton { margin-bottom: 25px; }
+#createButton, #deleteButton {
+  min-height: 48px;
+  border-radius: 8px;
+  touch-action: manipulation;
+}
+
+#deleteButton { margin-bottom: 22px; }
 #deleteButton:disabled { opacity: .45; cursor: not-allowed; }
 
 .pan-hint {
-  margin: -14px 0 25px;
+  margin: -10px 0 22px;
   color: #999;
   font-size: 12px;
   text-align: center;
@@ -129,17 +142,102 @@ body { background: #111; }
 .library-list { display: flex; flex-direction: column; gap: 7px; }
 
 .library-item {
+  min-height: 44px;
   padding: 9px 10px;
   border: 1px solid #444;
-  border-radius: 6px;
+  border-radius: 7px;
   background: #303030;
   color: white;
   cursor: pointer;
   text-align: left;
+  touch-action: manipulation;
 }
 
 .library-item:hover,
 .library-item.selected {
   background: #3d3d3d;
   border-color: #2196f3;
+}
+
+@media (max-width: 767.98px) {
+  html, body { overflow: hidden; }
+
+  .container-fluid,
+  .container-fluid > .row {
+    height: 100dvh !important;
+  }
+
+  .container-fluid > .row {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  #viewport {
+    flex: 0 0 55dvh;
+    width: 100%;
+    height: 55dvh;
+    position: relative;
+  }
+
+  .page-title {
+    top: 10px;
+    font-size: 18px;
+  }
+
+  .controls-panel {
+    flex: 1 1 auto;
+    width: 100%;
+    height: auto;
+    padding: 14px 14px 28px;
+    overflow-y: auto;
+    border-top: 1px solid #444;
+  }
+
+  .controls-panel h4 {
+    font-size: 16px;
+    margin: 9px 0 9px;
+  }
+
+  .material-dropdown-button { min-height: 48px; }
+
+  .button-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+    margin-bottom: 14px;
+  }
+
+  .button-grid button {
+    min-height: 44px;
+    padding: 7px 4px;
+    font-size: 13px;
+  }
+
+  #createButton, #deleteButton {
+    min-height: 46px;
+    margin-bottom: 12px;
+  }
+
+  .pan-hint { margin: 0 0 14px; }
+
+  .library-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .library-item {
+    min-width: 0;
+    min-height: 42px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 380px) {
+  #viewport { flex-basis: 52dvh; height: 52dvh; }
+  .controls-panel { padding-left: 10px; padding-right: 10px; }
+  .button-grid button { font-size: 12px; }
 }
