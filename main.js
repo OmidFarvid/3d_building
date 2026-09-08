@@ -2,6 +2,10 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.m
 
 const canvas = document.getElementById('canvas');
 const viewport = document.getElementById('viewport');
+const materialSelect = document.getElementById('materialSelect');
+const createButton = document.getElementById('createButton');
+const library = document.getElementById('library');
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x181818);
 
@@ -13,44 +17,86 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 camera.position.set(0, 50, 50);
 camera.lookAt(0, 0, 0);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-scene.add(ambientLight);
-
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
 keyLight.position.set(20, 40, 30);
 scene.add(keyLight);
 
-const geometry = new THREE.BoxGeometry(16, 16, 16);
-const material = new THREE.MeshStandardMaterial({
-  color: 0x2196f3,
-  roughness: 0.3,
-  metalness: 0.1
-});
-const box = new THREE.Mesh(geometry, material);
-scene.add(box);
+const materials = {
+  brick: new THREE.MeshStandardMaterial({ color: 0xb84a32, roughness: 0.9 }),
+  concrete: new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.95 }),
+  wood: new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.8 }),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0x66ccff, transparent: true, opacity: 0.45, roughness: 0.05, metalness: 0 }),
+  metal: new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.25, metalness: 0.85 })
+};
 
-const step = 1;
-const rotateStep = Math.PI / 18;
+const materialNames = {
+  brick: 'Brick',
+  concrete: 'Concrete',
+  wood: 'Wood',
+  glass: 'Glass',
+  metal: 'Metal'
+};
+
+const objects = [];
+let selectedObject = null;
+let nextObjectId = 1;
+
+function createObject(materialKey = materialSelect.value) {
+  const geometry = new THREE.BoxGeometry(16, 16, 16);
+  const mesh = new THREE.Mesh(geometry, materials[materialKey].clone());
+  mesh.position.set(0, 0, 0);
+  mesh.userData = {
+    id: nextObjectId++,
+    material: materialKey
+  };
+  scene.add(mesh);
+  objects.push(mesh);
+  selectObject(mesh);
+  updateLibrary();
+}
+
+function selectObject(object) {
+  selectedObject = object;
+  updateLibrary();
+}
+
+function updateLibrary() {
+  library.innerHTML = '';
+
+  objects.forEach(object => {
+    const item = document.createElement('button');
+    item.className = `library-item${object === selectedObject ? ' selected' : ''}`;
+    item.textContent = `Box #${object.userData.id} — ${materialNames[object.userData.material]}`;
+    item.addEventListener('click', () => selectObject(object));
+    library.appendChild(item);
+  });
+}
 
 function move(axis, amount) {
-  box.position[axis] += amount;
+  if (!selectedObject) return;
+  selectedObject.position[axis] += amount;
 }
 
 function rotate(axis, amount) {
-  box.rotation[axis] += amount;
+  if (!selectedObject) return;
+  selectedObject.rotation[axis] += amount;
 }
+
+// Movement is in 1 cm blocks. One Three.js unit represents 1 cm.
+const moveStep = 1;
+const rotateStep = Math.PI / 2;
 
 document.querySelectorAll('[data-action]').forEach(button => {
   button.addEventListener('click', () => {
     const action = button.dataset.action;
-
     switch (action) {
-      case 'move-x-minus': move('x', -step); break;
-      case 'move-x-plus': move('x', step); break;
-      case 'move-y-minus': move('y', -step); break;
-      case 'move-y-plus': move('y', step); break;
-      case 'move-z-minus': move('z', -step); break;
-      case 'move-z-plus': move('z', step); break;
+      case 'move-x-minus': move('x', -moveStep); break;
+      case 'move-x-plus': move('x', moveStep); break;
+      case 'move-y-minus': move('y', -moveStep); break;
+      case 'move-y-plus': move('y', moveStep); break;
+      case 'move-z-minus': move('z', -moveStep); break;
+      case 'move-z-plus': move('z', moveStep); break;
       case 'rotate-x-minus': rotate('x', -rotateStep); break;
       case 'rotate-x-plus': rotate('x', rotateStep); break;
       case 'rotate-y-minus': rotate('y', -rotateStep); break;
@@ -59,6 +105,25 @@ document.querySelectorAll('[data-action]').forEach(button => {
       case 'rotate-z-plus': rotate('z', rotateStep); break;
     }
   });
+});
+
+createButton.addEventListener('click', () => createObject());
+
+// Click an object in the 3D viewport to make it the editable object.
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+canvas.addEventListener('click', event => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(objects, false);
+
+  if (hits.length > 0) {
+    selectObject(hits[0].object);
+  }
 });
 
 function animate() {
@@ -75,3 +140,6 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(width, height);
 });
+
+// Start with one editable object.
+createObject('brick');
