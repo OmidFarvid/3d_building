@@ -2,9 +2,62 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.m
 
 const canvas = document.getElementById('canvas');
 const viewport = document.getElementById('viewport');
-const materialSelect = document.getElementById('materialSelect');
+const materialDropdown = document.getElementById('materialDropdown');
+const materialDropdownButton = document.getElementById('materialDropdownButton');
+const materialOptions = document.getElementById('materialOptions');
+const materialPreview = document.getElementById('materialPreview');
+const materialLabel = document.getElementById('materialLabel');
 const createButton = document.getElementById('createButton');
 const library = document.getElementById('library');
+
+const materialColors = {
+  brick: '#b84a32',
+  concrete: '#999999',
+  wood: '#8b5a2b',
+  glass: '#66ccff',
+  metal: '#9aa0a6'
+};
+
+const materialNames = {
+  brick: 'Brick',
+  concrete: 'Concrete',
+  wood: 'Wood',
+  glass: 'Glass',
+  metal: 'Metal'
+};
+
+function materialImage(key) {
+  const color = materialColors[key];
+  const pattern = key === 'brick'
+    ? `<path d="M0 11h34M0 23h34M17 0v11M8 11v12M25 11v12M17 23v11" stroke="rgba(0,0,0,.3)" stroke-width="2"/>`
+    : key === 'wood'
+      ? `<path d="M2 7c8-5 17 5 30-1M1 17c10-5 17 6 32 0M4 28c8-4 16 4 27-1" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="2"/>`
+      : key === 'glass'
+        ? `<path d="M7 27L27 7M13 32L32 13" stroke="white" stroke-opacity=".55" stroke-width="3"/>`
+        : '';
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><rect width="34" height="34" rx="4" fill="${color}"/>${pattern}</svg>`)}`;
+}
+
+let selectedMaterial = 'brick';
+materialPreview.src = materialImage(selectedMaterial);
+
+document.querySelectorAll('.material-option').forEach(option => {
+  option.querySelector('img').src = materialImage(option.dataset.value);
+  option.addEventListener('click', () => {
+    selectedMaterial = option.dataset.value;
+    materialPreview.src = materialImage(selectedMaterial);
+    materialLabel.textContent = materialNames[selectedMaterial];
+    document.querySelectorAll('.material-option').forEach(item => item.classList.toggle('selected', item === option));
+    materialDropdown.classList.remove('open');
+  });
+});
+
+materialDropdownButton.addEventListener('click', event => {
+  event.stopPropagation();
+  materialDropdown.classList.toggle('open');
+});
+
+document.addEventListener('click', () => materialDropdown.classList.remove('open'));
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x181818);
@@ -15,7 +68,8 @@ renderer.setSize(viewport.clientWidth, viewport.clientHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 camera.position.set(0, 50, 50);
-camera.lookAt(0, 0, 0);
+const cameraTarget = new THREE.Vector3(0, 0, 0);
+camera.lookAt(cameraTarget);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
@@ -30,27 +84,15 @@ const materials = {
   metal: new THREE.MeshStandardMaterial({ color: 0x9aa0a6, roughness: 0.25, metalness: 0.85 })
 };
 
-const materialNames = {
-  brick: 'Brick',
-  concrete: 'Concrete',
-  wood: 'Wood',
-  glass: 'Glass',
-  metal: 'Metal'
-};
-
 const objects = [];
 let selectedObject = null;
 let nextObjectId = 1;
 
-// One Three.js unit represents 1 cm, so every box is exactly 1 cm x 1 cm x 1 cm.
-function createObject(materialKey = materialSelect.value) {
+function createObject(materialKey = selectedMaterial) {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const mesh = new THREE.Mesh(geometry, materials[materialKey].clone());
   mesh.position.set(0, 0, 0);
-  mesh.userData = {
-    id: nextObjectId++,
-    material: materialKey
-  };
+  mesh.userData = { id: nextObjectId++, material: materialKey };
   scene.add(mesh);
   objects.push(mesh);
   selectObject(mesh);
@@ -64,7 +106,6 @@ function selectObject(object) {
 
 function updateLibrary() {
   library.innerHTML = '';
-
   objects.forEach(object => {
     const item = document.createElement('button');
     item.className = `library-item${object === selectedObject ? ' selected' : ''}`;
@@ -84,15 +125,13 @@ function rotate(axis, amount) {
   selectedObject.rotation[axis] += amount;
 }
 
-// Zoom only: move the camera along its current viewing direction. No orbit.
 function zoom(direction) {
-  const viewDirection = new THREE.Vector3();
-  camera.getWorldDirection(viewDirection);
-  const currentDistance = camera.position.length();
+  const currentDistance = camera.position.distanceTo(cameraTarget);
   const step = 5;
   const nextDistance = THREE.MathUtils.clamp(currentDistance - direction * step, 2, 500);
-  camera.position.setLength(nextDistance);
-  camera.lookAt(0, 0, 0);
+  const offset = camera.position.clone().sub(cameraTarget).normalize().multiplyScalar(nextDistance);
+  camera.position.copy(cameraTarget).add(offset);
+  camera.lookAt(cameraTarget);
 }
 
 const moveStep = 1;
@@ -120,11 +159,58 @@ document.querySelectorAll('[data-action]').forEach(button => {
   });
 });
 
-// Mouse wheel zoom, without orbit.
 canvas.addEventListener('wheel', event => {
   event.preventDefault();
   zoom(event.deltaY < 0 ? 1 : -1);
 }, { passive: false });
+
+// Right mouse button + drag pans the scene. Left mouse remains object selection.
+let isPanning = false;
+let lastPanX = 0;
+let lastPanY = 0;
+
+canvas.addEventListener('contextmenu', event => event.preventDefault());
+
+canvas.addEventListener('pointerdown', event => {
+  if (event.button !== 2) return;
+  isPanning = true;
+  lastPanX = event.clientX;
+  lastPanY = event.clientY;
+  canvas.classList.add('panning');
+  canvas.setPointerCapture(event.pointerId);
+});
+
+canvas.addEventListener('pointermove', event => {
+  if (!isPanning) return;
+
+  const dx = event.clientX - lastPanX;
+  const dy = event.clientY - lastPanY;
+  lastPanX = event.clientX;
+  lastPanY = event.clientY;
+
+  const distance = camera.position.distanceTo(cameraTarget);
+  const panSpeed = distance * 0.0015;
+  const forward = cameraTarget.clone().sub(camera.position).normalize();
+  const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+  const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+
+  const offset = right.multiplyScalar(-dx * panSpeed).add(up.multiplyScalar(dy * panSpeed));
+  camera.position.add(offset);
+  cameraTarget.add(offset);
+  camera.lookAt(cameraTarget);
+});
+
+canvas.addEventListener('pointerup', event => {
+  if (event.button !== 2) return;
+  isPanning = false;
+  canvas.classList.remove('panning');
+  if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+});
+
+canvas.addEventListener('pointercancel', () => {
+  isPanning = false;
+  canvas.classList.remove('panning');
+});
 
 createButton.addEventListener('click', () => createObject());
 
@@ -132,16 +218,13 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 canvas.addEventListener('click', event => {
+  if (event.button !== 0 || isPanning) return;
   const rect = canvas.getBoundingClientRect();
   mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
   raycaster.setFromCamera(mouse, camera);
   const hits = raycaster.intersectObjects(objects, false);
-
-  if (hits.length > 0) {
-    selectObject(hits[0].object);
-  }
+  if (hits.length > 0) selectObject(hits[0].object);
 });
 
 function animate() {
