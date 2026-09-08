@@ -84,16 +84,19 @@ function rotate(axis, amount) {
   selectedObject.rotation[axis] += amount;
 }
 
-function zoom(amount) {
-  const direction = new THREE.Vector3();
-  camera.getWorldDirection(direction);
-  camera.position.addScaledVector(direction, amount);
-  camera.updateProjectionMatrix();
+// Zoom only: move the camera along its current viewing direction. No orbit.
+function zoom(direction) {
+  const viewDirection = new THREE.Vector3();
+  camera.getWorldDirection(viewDirection);
+  const currentDistance = camera.position.length();
+  const step = 5;
+  const nextDistance = THREE.MathUtils.clamp(currentDistance - direction * step, 2, 500);
+  camera.position.setLength(nextDistance);
+  camera.lookAt(0, 0, 0);
 }
 
 const moveStep = 1;
 const rotateStep = Math.PI / 2;
-const zoomStep = 5;
 
 document.querySelectorAll('[data-action]').forEach(button => {
   button.addEventListener('click', () => {
@@ -111,11 +114,17 @@ document.querySelectorAll('[data-action]').forEach(button => {
       case 'rotate-y-plus': rotate('y', rotateStep); break;
       case 'rotate-z-minus': rotate('z', -rotateStep); break;
       case 'rotate-z-plus': rotate('z', rotateStep); break;
-      case 'zoom-in': zoom(-zoomStep); break;
-      case 'zoom-out': zoom(zoomStep); break;
+      case 'zoom-in': zoom(1); break;
+      case 'zoom-out': zoom(-1); break;
     }
   });
 });
+
+// Mouse wheel zoom, without orbit.
+canvas.addEventListener('wheel', event => {
+  event.preventDefault();
+  zoom(event.deltaY < 0 ? 1 : -1);
+}, { passive: false });
 
 createButton.addEventListener('click', () => createObject());
 
