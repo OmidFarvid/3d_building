@@ -11,13 +11,27 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 camera.position.set(0, 50, 50);
 camera.lookAt(0, 0, 0);
 
-const geometry = new THREE.SphereGeometry(1, 64, 64);
-const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+// Lighting makes the sphere's curvature and depth visible.
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+scene.add(ambientLight);
+
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+keyLight.position.set(20, 40, 30);
+scene.add(keyLight);
+
+const geometry = new THREE.SphereGeometry(8, 64, 64);
+const material = new THREE.MeshStandardMaterial({
+  color: 0xff0000,
+  roughness: 0.35,
+  metalness: 0.05
+});
 const sphere = new THREE.Mesh(geometry, material);
 scene.add(sphere);
 
 function animate() {
+  sphere.rotation.y += 0.01;
   renderer.render(scene, camera);
+  requestAnimationFrame(animate);
 }
 
 animate();
