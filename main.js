@@ -4,27 +4,14 @@ const canvas = document.getElementById('canvas');
 const viewport = document.getElementById('viewport');
 const materialDropdown = document.getElementById('materialDropdown');
 const materialDropdownButton = document.getElementById('materialDropdownButton');
-const materialOptions = document.getElementById('materialOptions');
 const materialPreview = document.getElementById('materialPreview');
 const materialLabel = document.getElementById('materialLabel');
 const createButton = document.getElementById('createButton');
+const deleteButton = document.getElementById('deleteButton');
 const library = document.getElementById('library');
 
-const materialColors = {
-  brick: '#b84a32',
-  concrete: '#999999',
-  wood: '#8b5a2b',
-  glass: '#66ccff',
-  metal: '#9aa0a6'
-};
-
-const materialNames = {
-  brick: 'Brick',
-  concrete: 'Concrete',
-  wood: 'Wood',
-  glass: 'Glass',
-  metal: 'Metal'
-};
+const materialColors = { brick: '#b84a32', concrete: '#999999', wood: '#8b5a2b', glass: '#66ccff', metal: '#9aa0a6' };
+const materialNames = { brick: 'Brick', concrete: 'Concrete', wood: 'Wood', glass: 'Glass', metal: 'Metal' };
 
 function materialImage(key) {
   const color = materialColors[key];
@@ -32,15 +19,12 @@ function materialImage(key) {
     ? `<path d="M0 11h34M0 23h34M17 0v11M8 11v12M25 11v12M17 23v11" stroke="rgba(0,0,0,.3)" stroke-width="2"/>`
     : key === 'wood'
       ? `<path d="M2 7c8-5 17 5 30-1M1 17c10-5 17 6 32 0M4 28c8-4 16 4 27-1" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="2"/>`
-      : key === 'glass'
-        ? `<path d="M7 27L27 7M13 32L32 13" stroke="white" stroke-opacity=".55" stroke-width="3"/>`
-        : '';
+      : key === 'glass' ? `<path d="M7 27L27 7M13 32L32 13" stroke="white" stroke-opacity=".55" stroke-width="3"/>` : '';
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34"><rect width="34" height="34" rx="4" fill="${color}"/>${pattern}</svg>`)}`;
 }
 
 let selectedMaterial = 'brick';
 materialPreview.src = materialImage(selectedMaterial);
-
 document.querySelectorAll('.material-option').forEach(option => {
   option.querySelector('img').src = materialImage(option.dataset.value);
   option.addEventListener('click', () => {
@@ -51,26 +35,18 @@ document.querySelectorAll('.material-option').forEach(option => {
     materialDropdown.classList.remove('open');
   });
 });
-
-materialDropdownButton.addEventListener('click', event => {
-  event.stopPropagation();
-  materialDropdown.classList.toggle('open');
-});
-
+materialDropdownButton.addEventListener('click', event => { event.stopPropagation(); materialDropdown.classList.toggle('open'); });
 document.addEventListener('click', () => materialDropdown.classList.remove('open'));
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x181818);
-
 const camera = new THREE.PerspectiveCamera(60, viewport.clientWidth / viewport.clientHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(viewport.clientWidth, viewport.clientHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
 camera.position.set(0, 50, 50);
 const cameraTarget = new THREE.Vector3(0, 0, 0);
 camera.lookAt(cameraTarget);
-
 scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
 keyLight.position.set(20, 40, 30);
@@ -88,21 +64,60 @@ const objects = [];
 let selectedObject = null;
 let nextObjectId = 1;
 
+function createSelectionOutline(mesh) {
+  const edges = new THREE.EdgesGeometry(mesh.geometry);
+  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xff2222, linewidth: 2 }));
+  line.scale.setScalar(1.02);
+  line.visible = false;
+  line.userData.isSelectionOutline = true;
+  mesh.add(line);
+  mesh.userData.outline = line;
+}
+
+function setSelectionOutline(object, visible) {
+  if (object?.userData.outline) object.userData.outline.visible = visible;
+}
+
 function createObject(materialKey = selectedMaterial) {
-  const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const mesh = new THREE.Mesh(geometry, materials[materialKey].clone());
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), materials[materialKey].clone());
   mesh.position.set(0, 0, 0);
   mesh.userData = { id: nextObjectId++, material: materialKey };
   scene.add(mesh);
   objects.push(mesh);
+  createSelectionOutline(mesh);
   selectObject(mesh);
-  updateLibrary();
 }
 
 function selectObject(object) {
+  if (selectedObject && selectedObject !== object) setSelectionOutline(selectedObject, false);
   selectedObject = object;
+  setSelectionOutline(selectedObject, true);
+  deleteButton.disabled = !selectedObject;
   updateLibrary();
 }
+
+function deleteSelectedObject() {
+  if (!selectedObject) return;
+  const index = objects.indexOf(selectedObject);
+  if (index >= 0) objects.splice(index, 1);
+  const outline = selectedObject.userData.outline;
+  if (outline) {
+    outline.geometry.dispose();
+    outline.material.dispose();
+  }
+  selectedObject.geometry.dispose();
+  selectedObject.material.dispose();
+  scene.remove(selectedObject);
+  selectedObject = null;
+  deleteButton.disabled = true;
+  updateLibrary();
+}
+
+deleteButton.addEventListener('click', deleteSelectedObject);
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Delete') deleteSelectedObject();
+});
 
 function updateLibrary() {
   library.innerHTML = '';
@@ -115,20 +130,12 @@ function updateLibrary() {
   });
 }
 
-function move(axis, amount) {
-  if (!selectedObject) return;
-  selectedObject.position[axis] += amount;
-}
-
-function rotate(axis, amount) {
-  if (!selectedObject) return;
-  selectedObject.rotation[axis] += amount;
-}
+function move(axis, amount) { if (selectedObject) selectedObject.position[axis] += amount; }
+function rotate(axis, amount) { if (selectedObject) selectedObject.rotation[axis] += amount; }
 
 function zoom(direction) {
   const currentDistance = camera.position.distanceTo(cameraTarget);
-  const step = 5;
-  const nextDistance = THREE.MathUtils.clamp(currentDistance - direction * step, 2, 500);
+  const nextDistance = THREE.MathUtils.clamp(currentDistance - direction * 5, 2, 500);
   const offset = camera.position.clone().sub(cameraTarget).normalize().multiplyScalar(nextDistance);
   camera.position.copy(cameraTarget).add(offset);
   camera.lookAt(cameraTarget);
@@ -136,87 +143,50 @@ function zoom(direction) {
 
 const moveStep = 1;
 const rotateStep = Math.PI / 2;
+document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
+  switch (button.dataset.action) {
+    case 'move-x-minus': move('x', -moveStep); break; case 'move-x-plus': move('x', moveStep); break;
+    case 'move-y-minus': move('y', -moveStep); break; case 'move-y-plus': move('y', moveStep); break;
+    case 'move-z-minus': move('z', -moveStep); break; case 'move-z-plus': move('z', moveStep); break;
+    case 'rotate-x-minus': rotate('x', -rotateStep); break; case 'rotate-x-plus': rotate('x', rotateStep); break;
+    case 'rotate-y-minus': rotate('y', -rotateStep); break; case 'rotate-y-plus': rotate('y', rotateStep); break;
+    case 'rotate-z-minus': rotate('z', -rotateStep); break; case 'rotate-z-plus': rotate('z', rotateStep); break;
+    case 'zoom-in': zoom(1); break; case 'zoom-out': zoom(-1); break;
+  }
+}));
 
-document.querySelectorAll('[data-action]').forEach(button => {
-  button.addEventListener('click', () => {
-    const action = button.dataset.action;
-    switch (action) {
-      case 'move-x-minus': move('x', -moveStep); break;
-      case 'move-x-plus': move('x', moveStep); break;
-      case 'move-y-minus': move('y', -moveStep); break;
-      case 'move-y-plus': move('y', moveStep); break;
-      case 'move-z-minus': move('z', -moveStep); break;
-      case 'move-z-plus': move('z', moveStep); break;
-      case 'rotate-x-minus': rotate('x', -rotateStep); break;
-      case 'rotate-x-plus': rotate('x', rotateStep); break;
-      case 'rotate-y-minus': rotate('y', -rotateStep); break;
-      case 'rotate-y-plus': rotate('y', rotateStep); break;
-      case 'rotate-z-minus': rotate('z', -rotateStep); break;
-      case 'rotate-z-plus': rotate('z', rotateStep); break;
-      case 'zoom-in': zoom(1); break;
-      case 'zoom-out': zoom(-1); break;
-    }
-  });
-});
+canvas.addEventListener('wheel', event => { event.preventDefault(); zoom(event.deltaY < 0 ? 1 : -1); }, { passive: false });
 
-canvas.addEventListener('wheel', event => {
-  event.preventDefault();
-  zoom(event.deltaY < 0 ? 1 : -1);
-}, { passive: false });
-
-// Right mouse button + drag pans the scene. Left mouse remains object selection.
 let isPanning = false;
 let lastPanX = 0;
 let lastPanY = 0;
-
 canvas.addEventListener('contextmenu', event => event.preventDefault());
-
 canvas.addEventListener('pointerdown', event => {
   if (event.button !== 2) return;
-  isPanning = true;
-  lastPanX = event.clientX;
-  lastPanY = event.clientY;
-  canvas.classList.add('panning');
-  canvas.setPointerCapture(event.pointerId);
+  isPanning = true; lastPanX = event.clientX; lastPanY = event.clientY;
+  canvas.classList.add('panning'); canvas.setPointerCapture(event.pointerId);
 });
-
 canvas.addEventListener('pointermove', event => {
   if (!isPanning) return;
-
-  const dx = event.clientX - lastPanX;
-  const dy = event.clientY - lastPanY;
-  lastPanX = event.clientX;
-  lastPanY = event.clientY;
-
-  const distance = camera.position.distanceTo(cameraTarget);
-  const panSpeed = distance * 0.0015;
+  const dx = event.clientX - lastPanX, dy = event.clientY - lastPanY;
+  lastPanX = event.clientX; lastPanY = event.clientY;
+  const distance = camera.position.distanceTo(cameraTarget), panSpeed = distance * 0.0015;
   const forward = cameraTarget.clone().sub(camera.position).normalize();
   const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
   const up = new THREE.Vector3().crossVectors(right, forward).normalize();
-
   const offset = right.multiplyScalar(-dx * panSpeed).add(up.multiplyScalar(dy * panSpeed));
-  camera.position.add(offset);
-  cameraTarget.add(offset);
-  camera.lookAt(cameraTarget);
+  camera.position.add(offset); cameraTarget.add(offset); camera.lookAt(cameraTarget);
 });
-
 canvas.addEventListener('pointerup', event => {
   if (event.button !== 2) return;
-  isPanning = false;
-  canvas.classList.remove('panning');
+  isPanning = false; canvas.classList.remove('panning');
   if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
 });
-
-canvas.addEventListener('pointercancel', () => {
-  isPanning = false;
-  canvas.classList.remove('panning');
-});
+canvas.addEventListener('pointercancel', () => { isPanning = false; canvas.classList.remove('panning'); });
 
 createButton.addEventListener('click', () => createObject());
-
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-
 canvas.addEventListener('click', event => {
   if (event.button !== 0 || isPanning) return;
   const rect = canvas.getBoundingClientRect();
@@ -227,19 +197,10 @@ canvas.addEventListener('click', event => {
   if (hits.length > 0) selectObject(hits[0].object);
 });
 
-function animate() {
-  renderer.render(scene, camera);
-  requestAnimationFrame(animate);
-}
-
+function animate() { renderer.render(scene, camera); requestAnimationFrame(animate); }
 animate();
-
 window.addEventListener('resize', () => {
-  const width = viewport.clientWidth;
-  const height = viewport.clientHeight;
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-  renderer.setSize(width, height);
+  const width = viewport.clientWidth, height = viewport.clientHeight;
+  camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height);
 });
-
 createObject('brick');
