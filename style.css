@@ -116,6 +116,9 @@ body { background: #111; }
 
 .button-grid button:hover { background: #444; }
 
+#deleteButton { margin-bottom: 25px; }
+#deleteButton:disabled { opacity: .45; cursor: not-allowed; }
+
 .pan-hint {
   margin: -14px 0 25px;
   color: #999;
