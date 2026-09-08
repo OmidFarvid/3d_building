@@ -2,6 +2,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.m
 
 const canvas = document.getElementById('canvas');
 const viewport = document.getElementById('viewport');
+const deviceMode = document.getElementById('deviceMode');
 const materialDropdown = document.getElementById('materialDropdown');
 const materialDropdownButton = document.getElementById('materialDropdownButton');
 const materialPreview = document.getElementById('materialPreview');
@@ -9,6 +10,13 @@ const materialLabel = document.getElementById('materialLabel');
 const createButton = document.getElementById('createButton');
 const deleteButton = document.getElementById('deleteButton');
 const library = document.getElementById('library');
+
+function updateDeviceMode() {
+  const isMobile = window.matchMedia('(max-width: 767.98px)').matches;
+  deviceMode.textContent = isMobile ? '📱 Mobile Mode' : '🖥️ Desktop Mode';
+}
+updateDeviceMode();
+window.addEventListener('resize', updateDeviceMode);
 
 const materialColors = { brick: '#b84a32', concrete: '#999999', wood: '#8b5a2b', glass: '#66ccff', metal: '#9aa0a6' };
 const materialNames = { brick: 'Brick', concrete: 'Concrete', wood: 'Wood', glass: 'Glass', metal: 'Metal' };
@@ -188,7 +196,6 @@ function panCamera(dx, dy) {
   camera.position.add(offset); cameraTarget.add(offset); camera.lookAt(cameraTarget);
 }
 
-// Mobile: two fingers pan and pinch to zoom. A single tap remains object selection.
 const touchPoints = new Map();
 let touchMode = null;
 let lastTouchCenter = null;
